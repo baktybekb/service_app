@@ -1,8 +1,10 @@
 import logging
 from django.core.validators import MaxValueValidator
 from django.db import models
+from django.db.models.signals import post_delete
 
 from clients.models import Client
+from services.receivers import delete_cache_total_sum
 from services.tasks import set_price, set_comment
 
 logger = logging.getLogger(__name__)
@@ -61,3 +63,12 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.client} | {self.service} | {self.plan}'
+
+    def save(self, *args, **kwargs):
+        creating = not self.pk
+        super().save(*args, **kwargs)
+        if creating:
+            set_price.delay(self.pk)
+
+
+post_delete.connect(delete_cache_total_sum, sender=Subscription)
