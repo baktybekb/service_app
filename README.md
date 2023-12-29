@@ -1,1 +1,1 @@
-django backend practice
+django rest framework practice
